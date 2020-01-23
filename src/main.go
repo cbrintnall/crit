@@ -111,16 +111,28 @@ func getSecretDefault() (string, error) {
 	return getSecretAt(path.Join(getHome(), ".secrets"))
 }
 
-func getSecrets(text string) (SecretFile, error) {
-	file := SecretFile{}
+func getSecrets(text string) ([]Secret, error) {
+	file := &SecretFile{}
 
 	err := yaml.Unmarshal([]byte(text), &file)
 
 	if err != nil {
-		return file, err
+		return []Secret{}, err
 	}
 
-	return file, nil
+	secrets := []Secret{}
+
+	for _, puller := range file.Pullers {
+		secret, err := puller.toSecret()
+
+		if err != nil {
+			return []Secret{}, err
+		}
+
+		secrets = append(secrets, secret)
+	}
+
+	return secrets, nil
 }
 
 func runCommand(c *exec.Cmd) error {
@@ -133,12 +145,11 @@ func runCommand(c *exec.Cmd) error {
 	secret, err := getSecrets(contents)
 	envs := os.Environ()
 
-	for _, s := range secret.Secrets {
+	for _, s := range secret {
 		envs = append(envs, s.ToKeyValue())
 	}
 
 	c.Env = envs
-
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr

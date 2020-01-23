@@ -42,7 +42,7 @@ func handleInput(c *cli.Context) error {
 			return err
 		}
 
-		for _, s := range secrets.Secrets {
+		for _, s := range secrets {
 			fmt.Println(s.ToKeyValue())
 		}
 	}

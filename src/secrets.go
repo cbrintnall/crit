@@ -2,10 +2,12 @@ package main
 
 import "fmt"
 
+const GcpSecret string = "gcp"
+
 // SecretFile is the in memory representation of the
 // .secret yaml file.
 type SecretFile struct {
-	Secrets []Secret `yaml:"secrets"`
+	Pullers []PullerParent `yaml:"secrets"`
 }
 
 // Secret is a small block representing a key and value
@@ -15,18 +17,24 @@ type Secret struct {
 }
 
 type PullerParent struct {
-	From string `yaml:"from`
-	Key  string `yaml:"key"`
+	From  string `yaml:"from`
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
 }
 
-type Puller interface {
-	getCreds() Secret
+func (p *PullerParent) toSecret() (Secret, error) {
+	return Secret{
+		Key:   p.Key,
+		Value: p.Value,
+	}, nil
 }
 
-type GcpSecretsManagerPuller struct{}
+func (p *PullerParent) isRawSecret() bool {
+	return p.From == ""
+}
 
-func (a GcpSecretsManagerPuller) getCreds() (Secret, error) {
-	return Secret{}, nil
+func (p *PullerParent) isGcpSecret() bool {
+	return p.From == GcpSecret
 }
 
 // ToKeyValue turns a secret struct into something a process
