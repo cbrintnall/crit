@@ -37,10 +37,18 @@ In the future, the goal is to support pulling from `Vault`, `AWS Secrets Manager
 
 #### start
 
-**to run:** `crit start <command>`
+to run: `crit start <command>`
 
-**example:** `crit start yarn start`
+example: `crit start yarn start`
 
 This will call `yarn start` and inject any secrets defined at `/home/{usr}/.secrets`.
 
 Start is used to `exec` a program with injected variable. 
+
+#### out
+
+to run: `crit out [--file]`
+
+example: `export $(crit out)`
+
+This will load your secret file and output the keys that will be injected into your process. If you use the `--file` option, it will output your current `.secrets` file.

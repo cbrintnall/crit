@@ -14,6 +14,21 @@ type Secret struct {
 	Value string `yaml:"value"`
 }
 
+type PullerParent struct {
+	From string `yaml:"from`
+	Key  string `yaml:"key"`
+}
+
+type Puller interface {
+	getCreds() Secret
+}
+
+type GcpSecretsManagerPuller struct{}
+
+func (a GcpSecretsManagerPuller) getCreds() (Secret, error) {
+	return Secret{}, nil
+}
+
 // ToKeyValue turns a secret struct into something a process
 // can understand for its environment variables
 func (s Secret) ToKeyValue() string {

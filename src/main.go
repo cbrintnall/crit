@@ -36,19 +36,8 @@ func main() {
 					return nil
 				},
 			},
-			{
-				Name:    "start",
-				Aliases: []string{"s"},
-				Usage:   "Start a program with secrets injected",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "path",
-						Aliases: []string{"p"},
-						Usage:   "Loads the secret file from `PATH`",
-					},
-				},
-				Action: Inject,
-			},
+			getStartCmd(),
+			getOutCmd(),
 		},
 	}
 
