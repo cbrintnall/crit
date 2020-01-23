@@ -1,4 +1,4 @@
-FILES=main.go secrets.go
+FILES=src/main.go src/secrets.go
 
 all:
 	go build $(FILES)
