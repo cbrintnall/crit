@@ -27,7 +27,13 @@ func getOutCmd() *cli.Command {
 }
 
 func handleInput(c *cli.Context) error {
-	contents, err := getSecretDefault()
+	path := defaultPath()
+
+	if c.String("path") != "" {
+		path = c.String("path")
+	}
+
+	contents, err := getSecretAt(path)
 
 	if err != nil {
 		return err

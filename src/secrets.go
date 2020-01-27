@@ -2,12 +2,11 @@ package main
 
 import "fmt"
 
-const GcpSecret string = "gcp"
-
 // SecretFile is the in memory representation of the
 // .secret yaml file.
 type SecretFile struct {
-	Pullers []PullerParent `yaml:"secrets"`
+	RawSecrets    []RawSecret    `yaml:"secrets"`
+	GoogleSecrets []GoogleSecret `yaml:"google"`
 }
 
 // Secret is a small block representing a key and value
@@ -16,25 +15,35 @@ type Secret struct {
 	Value string `yaml:"value"`
 }
 
-type PullerParent struct {
-	From  string `yaml:"from`
-	Key   string `yaml:"key"`
-	Value string `yaml:"value"`
+type ResolveableSecret interface {
+	toSecret() (Secret, error)
 }
 
-func (p *PullerParent) toSecret() (Secret, error) {
-	return Secret{
-		Key:   p.Key,
-		Value: p.Value,
-	}, nil
-}
+// ResolveAll grabs all secrets defined in a secret file and returns them.
+func (s *SecretFile) ResolveAll() ([]Secret, error) {
+	secrets := []Secret{}
 
-func (p *PullerParent) isRawSecret() bool {
-	return p.From == ""
-}
+	for _, r := range s.RawSecrets {
+		secret, err := r.toSecret()
 
-func (p *PullerParent) isGcpSecret() bool {
-	return p.From == GcpSecret
+		if err != nil {
+			return secrets, err
+		}
+
+		secrets = append(secrets, secret)
+	}
+
+	for _, g := range s.GoogleSecrets {
+		secret, err := g.toSecret()
+
+		if err != nil {
+			return secrets, err
+		}
+
+		secrets = append(secrets, secret)
+	}
+
+	return secrets, nil
 }
 
 // ToKeyValue turns a secret struct into something a process

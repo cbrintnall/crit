@@ -39,6 +39,13 @@ func main() {
 			getStartCmd(),
 			getOutCmd(),
 		},
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "path",
+				Aliases: []string{"p"},
+				Usage:   "Provide a path to your desired .secrets file location",
+			},
+		},
 	}
 
 	err := app.Run(os.Args)
@@ -69,9 +76,19 @@ func Inject(c *cli.Context) error {
 
 	executable := exec.Command(cmd[0], cmd[1:]...)
 
+	contents, err := getSecretDefault()
+
+	fmt.Println(c.String("path"))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	secrets, err := getSecrets(contents)
+
 	color.Cyan("Executing: %s\n", executable)
 
-	if err := runCommand(executable); err != nil {
+	if err := runCommand(executable, secrets); err != nil {
 		return err
 	}
 
@@ -86,6 +103,10 @@ func getHome() string {
 	}
 
 	return usr.HomeDir
+}
+
+func defaultPath() string {
+	return path.Join(getHome(), ".secrets")
 }
 
 func getSecretAt(filepath string) (string, error) {
@@ -108,7 +129,7 @@ func getSecretAt(filepath string) (string, error) {
 }
 
 func getSecretDefault() (string, error) {
-	return getSecretAt(path.Join(getHome(), ".secrets"))
+	return getSecretAt(defaultPath())
 }
 
 func getSecrets(text string) ([]Secret, error) {
@@ -120,32 +141,27 @@ func getSecrets(text string) ([]Secret, error) {
 		return []Secret{}, err
 	}
 
-	secrets := []Secret{}
+	// TODO: Resolution of each secret should be a goroutine
+	// when each goroutine returns we can evaluate if that
+	// secret was pulled successfully and pass that information
+	// to shouldEscalateResolutionError
+	secrets, err := file.ResolveAll()
 
-	for _, puller := range file.Pullers {
-		secret, err := puller.toSecret()
-
-		if err != nil {
-			return []Secret{}, err
-		}
-
-		secrets = append(secrets, secret)
+	if err != nil && shouldEscalateResolutionError(err) {
+		return []Secret{}, err
 	}
 
 	return secrets, nil
 }
 
-func runCommand(c *exec.Cmd) error {
-	contents, err := getSecretDefault()
+func shouldEscalateResolutionError(err error) bool {
+	return false
+}
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	secret, err := getSecrets(contents)
+func runCommand(c *exec.Cmd, secrets []Secret) error {
 	envs := os.Environ()
 
-	for _, s := range secret {
+	for _, s := range secrets {
 		envs = append(envs, s.ToKeyValue())
 	}
 

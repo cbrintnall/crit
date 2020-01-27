@@ -52,3 +52,14 @@ to run: `crit out [--file]`
 example: `export $(crit out)`
 
 This will load your secret file and output the keys that will be injected into your process. If you use the `--file` option, it will output your current `.secrets` file.
+
+### Supported Backends
+
+* Google Secrets Manager
+
+#### Planned
+
+* Kubernetes
+* Gitlab CI
+* AWS Secrets Manager
+* Hashicorp Vault
