@@ -39,6 +39,13 @@ func main() {
 			getStartCmd(),
 			getOutCmd(),
 		},
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "path",
+				Aliases: []string{"p"},
+				Usage:   "Provide a path to your desired .secrets file location",
+			},
+		},
 	}
 
 	err := app.Run(os.Args)
@@ -69,9 +76,23 @@ func Inject(c *cli.Context) error {
 
 	executable := exec.Command(cmd[0], cmd[1:]...)
 
+	path := defaultPath()
+
+	if c.String("path") != "" {
+		path = c.String("path")
+	}
+
+	contents, err := getSecretFileAt(path)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	secrets, err := getSecrets(contents)
+
 	color.Cyan("Executing: %s\n", executable)
 
-	if err := runCommand(executable); err != nil {
+	if err := runCommand(executable, secrets); err != nil {
 		return err
 	}
 
@@ -88,7 +109,11 @@ func getHome() string {
 	return usr.HomeDir
 }
 
-func getSecretAt(filepath string) (string, error) {
+func defaultPath() string {
+	return path.Join(getHome(), ".secrets")
+}
+
+func getSecretFileAt(filepath string) (string, error) {
 	if _, err := os.Stat(filepath); err != nil && os.IsNotExist(err) {
 		color.Red(fmt.Sprintf("❌ File at path %s does not exist", filepath))
 		os.Exit(NO_FILE)
@@ -108,37 +133,43 @@ func getSecretAt(filepath string) (string, error) {
 }
 
 func getSecretDefault() (string, error) {
-	return getSecretAt(path.Join(getHome(), ".secrets"))
+	return getSecretFileAt(defaultPath())
 }
 
-func getSecrets(text string) (SecretFile, error) {
-	file := SecretFile{}
+func getSecrets(text string) ([]Secret, error) {
+	file := &SecretFile{}
 
 	err := yaml.Unmarshal([]byte(text), &file)
 
 	if err != nil {
-		return file, err
+		return []Secret{}, err
 	}
 
-	return file, nil
+	// TODO: Resolution of each secret should be a goroutine
+	// when each goroutine returns we can evaluate if that
+	// secret was pulled successfully and pass that information
+	// to shouldEscalateResolutionError
+	secrets, err := file.ResolveAll()
+
+	if err != nil && shouldEscalateResolutionError(err) {
+		return []Secret{}, err
+	}
+
+	return secrets, nil
 }
 
-func runCommand(c *exec.Cmd) error {
-	contents, err := getSecretDefault()
+func shouldEscalateResolutionError(err error) bool {
+	return false
+}
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	secret, err := getSecrets(contents)
+func runCommand(c *exec.Cmd, secrets []Secret) error {
 	envs := os.Environ()
 
-	for _, s := range secret.Secrets {
+	for _, s := range secrets {
 		envs = append(envs, s.ToKeyValue())
 	}
 
 	c.Env = envs
-
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr

@@ -27,7 +27,13 @@ func getOutCmd() *cli.Command {
 }
 
 func handleInput(c *cli.Context) error {
-	contents, err := getSecretDefault()
+	path := defaultPath()
+
+	if c.String("path") != "" {
+		path = c.String("path")
+	}
+
+	contents, err := getSecretFileAt(path)
 
 	if err != nil {
 		return err
@@ -42,7 +48,7 @@ func handleInput(c *cli.Context) error {
 			return err
 		}
 
-		for _, s := range secrets.Secrets {
+		for _, s := range secrets {
 			fmt.Println(s.ToKeyValue())
 		}
 	}
