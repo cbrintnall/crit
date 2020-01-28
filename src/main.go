@@ -76,9 +76,15 @@ func Inject(c *cli.Context) error {
 
 	executable := exec.Command(cmd[0], cmd[1:]...)
 
-	contents, err := getSecretDefault()
+	path := defaultPath()
 
-	fmt.Println(c.String("path"))
+	if c.String("path") != "" {
+		path = c.String("path")
+	}
+
+	contents, err := getSecretAt(path)
+
+	fmt.Println(contents)
 
 	if err != nil {
 		log.Fatal(err)
@@ -164,6 +170,8 @@ func runCommand(c *exec.Cmd, secrets []Secret) error {
 	for _, s := range secrets {
 		envs = append(envs, s.ToKeyValue())
 	}
+
+	fmt.Println(envs)
 
 	c.Env = envs
 	c.Stdin = os.Stdin
