@@ -47,7 +47,5 @@ func (g *GoogleSecret) toSecret() (Secret, error) {
 		Value: string(result.Payload.Data),
 	}
 
-	fmt.Println(secret)
-
 	return secret, nil
 }

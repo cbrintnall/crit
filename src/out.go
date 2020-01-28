@@ -33,7 +33,7 @@ func handleInput(c *cli.Context) error {
 		path = c.String("path")
 	}
 
-	contents, err := getSecretAt(path)
+	contents, err := getSecretFileAt(path)
 
 	if err != nil {
 		return err

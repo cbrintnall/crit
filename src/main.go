@@ -82,9 +82,7 @@ func Inject(c *cli.Context) error {
 		path = c.String("path")
 	}
 
-	contents, err := getSecretAt(path)
-
-	fmt.Println(contents)
+	contents, err := getSecretFileAt(path)
 
 	if err != nil {
 		log.Fatal(err)
@@ -115,7 +113,7 @@ func defaultPath() string {
 	return path.Join(getHome(), ".secrets")
 }
 
-func getSecretAt(filepath string) (string, error) {
+func getSecretFileAt(filepath string) (string, error) {
 	if _, err := os.Stat(filepath); err != nil && os.IsNotExist(err) {
 		color.Red(fmt.Sprintf("❌ File at path %s does not exist", filepath))
 		os.Exit(NO_FILE)
@@ -135,7 +133,7 @@ func getSecretAt(filepath string) (string, error) {
 }
 
 func getSecretDefault() (string, error) {
-	return getSecretAt(defaultPath())
+	return getSecretFileAt(defaultPath())
 }
 
 func getSecrets(text string) ([]Secret, error) {
@@ -170,8 +168,6 @@ func runCommand(c *exec.Cmd, secrets []Secret) error {
 	for _, s := range secrets {
 		envs = append(envs, s.ToKeyValue())
 	}
-
-	fmt.Println(envs)
 
 	c.Env = envs
 	c.Stdin = os.Stdin
