@@ -15,7 +15,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const VERSION = "0.2"
+const VERSION = "0.3"
 
 const (
 	NO_CMD  = iota + 1
