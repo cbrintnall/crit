@@ -15,5 +15,5 @@ jobs:
     - uses: actions/checkout@master
     - name: Build
       uses: ouzi-dev/go-make-action@v1.1.0
-      run: |
-        make
+      with:
+        target: all
